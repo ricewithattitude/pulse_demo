@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pulse — Demo</title>
+<style>
+  :root {
+    --bg: #0A0A0A;
+    --panel: #141414;
+    --panel2: #1C1C1C;
+    --line: #2A2A2A;
+    --ink: #FFFFFF;
+    --muted: #B8B8B8;
+    --faint: #6A6A6A;
+    --orange: #E8601C;
+    --orange-soft: #2A1308;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", sans-serif;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: 48px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  /* top bar */
+  .topbar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 3px solid var(--orange);
+    padding-top: 18px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-size: 12px;
+  }
+  .logo svg { display: block; }
+  .logo span { color: var(--orange); }
+  /* inline logo used in phone header */
+  .phone-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    margin-top: 2px;
+  }
+  .phone-logo svg { display: block; }
+  .phone-logo b {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--ink);
+  }
+  .nav {
+    display: flex;
+    gap: 8px;
+  }
+  .nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+    text-transform: uppercase;
+  }
+  .nav button:hover { color: var(--ink); border-color: var(--faint); }
+  .nav button.active {
+    background: var(--orange);
+    color: var(--ink);
+    border-color: var(--orange);
+  }
+
+  /* phone frame */
+  .phone {
+    width: 360px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: 22px 22px 26px;
+    box-shadow: 0 30px 60px rgba(0,0,0,.6), 0 0 0 8px #050505;
+    position: relative;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: #050505;
+    border-radius: 3px;
+  }
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--faint);
+    margin-bottom: 18px;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; }}
+
+  /* headings inside phone */
+  .hello {
+    font-size: 12px;
+    color: var(--faint);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .greeting {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+  .greeting span { color: var(--orange); }
+
+  /* weekly goal card */
+  .card {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-label {
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .goal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 14px;
+  }
+  .goal-count {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .goal-count small {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .goal-hint {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    max-width: 130px;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--faint);
+    font-weight: 600;
+  }
+  .day.done {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--ink);
+  }
+  .day.missed {
+    background: var(--orange-soft);
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+  .day.today {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  /* streak card with grace */
+  .streak-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .streak-num {
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--orange);
+    line-height: 1;
+  }
+  .streak-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .grace-pill {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: var(--orange-soft);
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* workout card */
+  .workout-card {
+    background: var(--orange);
+    border: none;
+    border-radius: 14px;
+    padding: 20px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .15s ease;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .workout-card:hover { transform: translateY(-2px); }
+  .workout-card .eyebrow {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .workout-card h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .workout-card p {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .workout-card .meta {
+    display: flex;
+    gap: 14px;
+    margin-top: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.95;
+  }
+
+  /* workout detail */
+  .back {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    margin-bottom: 16px;
+    font-family: inherit;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .back:hover { color: var(--ink); }
+  .w-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+  .w-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .w-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .w-stats div {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .w-stats strong {
+    display: block;
+    font-size: 18px;
+    color: var(--orange);
+    margin-bottom: 2px;
+  }
+  .w-stats span {
+    font-size: 9px;
+    color: var(--faint);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .steps {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+  .steps li {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps li b {
+    color: var(--orange);
+    font-family: "SF Mono", monospace;
+    font-size: 12px;
+    min-width: 24px;
+  }
+  .steps li span { color: var(--muted); margin-left: auto; font-size: 11px;}
+
+  /* primary button */
+  .btn {
+    width: 100%;
+    background: var(--orange);
+    color: var(--ink);
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .1s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.ghost {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .btn.ghost:hover { color: var(--ink); border-color: var(--faint); }
+
+  /* progress share */
+  .share-card {
+    background: linear-gradient(160deg, #1a0f08 0%, var(--panel2) 100%);
+    border: 1px solid var(--orange);
+    border-radius: 18px;
+    padding: 28px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .share-card::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, rgba(232,96,28,0.25), transparent 70%);
+    pointer-events: none;
+  }
+  .share-big {
+    font-size: 60px;
+    font-weight: 800;
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .share-label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 22px;
+  }
+  .share-row {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .share-row div {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .share-row strong {
+    display: block;
+    color: var(--ink);
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+  .share-badge {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 5px 12px;
+    background: var(--orange-soft);
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* footer caption */
+  .caption {
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 1px;
+    max-width: 900px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .caption b { color: var(--muted); }
+
+  /* active-workout (timer) */
+  .timer-wrap {
+    text-align: center;
+    padding: 30px 0 20px;
+  }
+  .timer {
+    font-size: 72px;
+    font-weight: 800;
+    font-family: "SF Mono", "Menlo", monospace;
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .current-step {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .pace {
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 10px;
+  }
+
+  /* done screen */
+  .done-wrap {
+    text-align: center;
+    padding: 20px 0 10px;
+  }
+  .done-check {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--orange);
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 800;
+  }
+  .done-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .done-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 800 800" aria-hidden="true">
+        <circle cx="400" cy="400" r="260" fill="none" stroke="#E8601C" stroke-width="40"/>
+        <polyline points="180,400 290,400 330,300 370,500 410,260 450,540 490,400 620,400"
+          fill="none" stroke="#E8601C" stroke-width="44" stroke-linecap="square" stroke-linejoin="miter"/>
+      </svg>
+      PULSE <span>//</span> DEMO
+    </div>
+    <nav class="nav">
+      <button data-screen="home" class="active">Home</button>
+      <button data-screen="workout">Workout</button>
+      <button data-screen="active">Running</button>
+      <button data-screen="done">Finished</button>
+      <button data-screen="share">Share</button>
+    </nav>
+  </div>
+
+  <div class="phone">
+    <div class="status-row">
+      <span>9:41</span>
+      <span>● ● ●</span>
+    </div>
+
+    <div class="phone-logo">
+      <svg width="22" height="22" viewBox="0 0 800 800" aria-hidden="true">
+        <circle cx="400" cy="400" r="260" fill="none" stroke="#E8601C" stroke-width="44"/>
+        <polyline points="180,400 290,400 330,300 370,500 410,260 450,540 490,400 620,400"
+          fill="none" stroke="#E8601C" stroke-width="48" stroke-linecap="square" stroke-linejoin="miter"/>
+      </svg>
+      <b>PULSE</b>
+    </div>
+
+    <!-- ============ HOME ============ -->
+    <section class="screen active" id="screen-home">
+      <div class="hello">THURSDAY · APRIL 9</div>
+      <h1 class="greeting">Hi Claire.<br/><span>20 minutes today?</span></h1>
+
+      <div class="card">
+        <div class="card-label">This week</div>
+        <div class="goal-row">
+          <div class="goal-count">3<small> / 5</small></div>
+          <div class="goal-hint">You set a flexible goal. Missing a day is fine.</div>
+        </div>
+        <div class="days">
+          <div class="day done">M</div>
+          <div class="day done">T</div>
+          <div class="day missed">W</div>
+          <div class="day today">T</div>
+          <div class="day">F</div>
+          <div class="day">S</div>
+          <div class="day">S</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Current streak</div>
+        <div class="streak-row">
+          <div class="streak-num">12</div>
+          <div class="streak-text">
+            You missed Wednesday. No problem.
+            <br/><span class="grace-pill">Streak still running</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="workout-card" onclick="go('workout')">
+        <div class="eyebrow">Today's pick</div>
+        <h3>Easy run — 20 min</h3>
+        <p>Gentle pace. Good for getting back into it.</p>
+        <div class="meta">
+          <span>⏱  20 min</span>
+          <span>🏃  2.5 km</span>
+          <span>⚡  Easy</span>
+        </div>
+      </button>
+    </section>
+
+    <!-- ============ WORKOUT DETAIL ============ -->
+    <section class="screen" id="screen-workout">
+      <button class="back" onclick="go('home')">← Back</button>
+      <h2 class="w-title">Easy run</h2>
+      <p class="w-sub">Paris · 20 min · Beginner friendly</p>
+
+      <div class="w-stats">
+        <div><strong>20</strong><span>Minutes</span></div>
+        <div><strong>2.5</strong><span>Km</span></div>
+        <div><strong>~180</strong><span>Cal</span></div>
+      </div>
+
+      <ol class="steps">
+        <li><b>01</b> Warm-up walk <span>3 min</span></li>
+        <li><b>02</b> Easy jog <span>5 min</span></li>
+        <li><b>03</b> Walk break <span>1 min</span></li>
+        <li><b>04</b> Easy jog <span>8 min</span></li>
+        <li><b>05</b> Cooldown walk <span>3 min</span></li>
+      </ol>
+
+      <button class="btn" onclick="go('active')">Start workout</button>
+      <button class="btn ghost" onclick="go('home')">Save for later</button>
+    </section>
+
+    <!-- ============ ACTIVE ============ -->
+    <section class="screen" id="screen-active">
+      <button class="back" onclick="go('workout')">← Pause</button>
+
+      <div class="timer-wrap">
+        <div class="timer" id="timer">07:42</div>
+        <div class="current-step">Step 2 · Easy jog</div>
+        <div class="pace">Pace 6'12"/km  ·  1.2 km  ·  92 bpm</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Up next</div>
+        <div class="streak-row">
+          <div style="font-size:16px;font-weight:700">Walk break</div>
+          <div style="font-size:12px;color:var(--muted)">in 2:18</div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="go('done')">End workout</button>
+    </section>
+
+    <!-- ============ DONE ============ -->
+    <section class="screen" id="screen-done">
+      <div class="done-wrap">
+        <div class="done-check">✓</div>
+        <div class="done-title">Nice work, Claire.</div>
+        <div class="done-sub">You just earned day 4 of 5 this week.</div>
+      </div>
+
+      <div class="w-stats">
+        <div><strong>20:04</strong><span>Time</span></div>
+        <div><strong>2.48</strong><span>Km</span></div>
+        <div><strong>184</strong><span>Cal</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Weekly goal</div>
+        <div class="goal-row">
+          <div class="goal-count">4<small> / 5</small></div>
+          <div class="goal-hint">One more and you hit the week.</div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="go('share')">Share this run</button>
+      <button class="btn ghost" onclick="go('home')">Done</button>
+    </section>
+
+    <!-- ============ SHARE ============ -->
+    <section class="screen" id="screen-share">
+      <button class="back" onclick="go('done')">← Back</button>
+
+      <div class="share-card">
+        <div class="share-badge">Pulse · Day 12</div>
+        <div class="share-big">2.5</div>
+        <div class="share-label">Kilometers · Easy run</div>
+        <div class="share-row">
+          <div><strong>20:04</strong>Time</div>
+          <div><strong>6'12"</strong>Pace</div>
+          <div><strong>184</strong>Cal</div>
+        </div>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <button class="btn">Send to a friend</button>
+      <button class="btn ghost">Copy link</button>
+
+      <div style="margin-top:18px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;font-size:11px;color:var(--muted);line-height:1.5">
+        <b style="color:var(--orange);font-weight:700">Referral:</b> When a friend joins through your link, you both get a free month.
+      </div>
+    </section>
+  </div>
+
+  <p class="caption">
+    Five key screens from the <b>Pulse</b> launch. Claire opens the app, sees her flexible weekly goal with a grace day,
+    picks a 20-minute run, finishes it, and sends a progress card to a friend — referral built in.
+  </p>
+
+<script>
+  // nav
+  const buttons = document.querySelectorAll(".nav button");
+  const screens = document.querySelectorAll(".screen");
+  function go(name) {
+    screens.forEach(s => s.classList.toggle("active", s.id === "screen-" + name));
+    buttons.forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  buttons.forEach(b => b.addEventListener("click", () => go(b.dataset.screen)));
+
+  // live timer on Active screen
+  let t = 7 * 60 + 42;
+  setInterval(() => {
+    if (document.getElementById("screen-active").classList.contains("active")) {
+      t++;
+      const m = String(Math.floor(t / 60)).padStart(2, "0");
+      const s = String(t % 60).padStart(2, "0");
+      document.getElementById("timer").textContent = m + ":" + s;
+    }
+  }, 1000);
+</script>
+</body>
+</html>
